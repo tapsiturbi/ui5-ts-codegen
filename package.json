@@ -3,6 +3,10 @@
 	"displayName": "ui5-ts-codegen",
 	"description": "Visual Studio Code plugin that generates helper code for OpenUI5 / SAPUI5 classes",
     "publisher": "LevyBajamundi",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/tapsiturbi/ui5-ts-codegen.git"
+    },
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.57.0"
