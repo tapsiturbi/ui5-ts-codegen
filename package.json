@@ -2,12 +2,12 @@
 	"name": "ui5-ts-codegen",
 	"displayName": "ui5-ts-codegen",
 	"description": "Visual Studio Code plugin that generates helper code for OpenUI5 / SAPUI5 classes",
-    "publisher": "LevyBajamundi",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/tapsiturbi/ui5-ts-codegen.git"
-    },
-	"version": "0.0.1",
+	"publisher": "LevyBajamundi",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/tapsiturbi/ui5-ts-codegen.git"
+	},
+	"version": "0.1.0",
 	"engines": {
 		"vscode": "^1.57.0"
 	},
@@ -25,17 +25,19 @@
 				"title": "UI5-ts-codegen: Generate code for JSONModel"
 			}
 		],
-        "configuration": {
-            "type": "object",
-            "title": "UI5-ts-codegen Configuration",
-            "properties": {
-                "ui5-ts-codegen.parentClassName": {
-                    "type": "array",
-                    "default": ["ViewJSONModel"],
-                    "description": "The OpenUI5/SAPUI5 parent classes that the model generator would work on"
-                }
-            }
-        }
+		"configuration": {
+			"type": "object",
+			"title": "UI5-ts-codegen Configuration",
+			"properties": {
+				"ui5-ts-codegen.parentClassName": {
+					"type": "array",
+					"default": [
+						"ViewJSONModel"
+					],
+					"description": "The OpenUI5/SAPUI5 parent classes that the model generator would work on"
+				}
+			}
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
