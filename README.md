@@ -1,70 +1,61 @@
 # ui5-ts-codegen README
 
-This is the README for your extension "ui5-ts-codegen". After writing up a brief description, we recommend including the following sections.
+This is a Visual Studio Code plugin that generates typescript code for SAPUI5/OpenUI5 model classes.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+Generate getters/setters and contextPath builders based on the defined data structure of the model.
 
-For example if there is an image subfolder under your extension project workspace:
+# Why generate code?
+UI5 models has helper functions like setProperty/getProperty to set and get data. However, you would need to know the full data structure of each of your models before you even use it. To make it easier to maintain, this code generator would automatically create the getters and setters for each data on your model.
 
-\!\[feature X\]\(images/feature-x.png\)
+# Requirements
+This script expects the following:
+- you are using typescript on your project
+- you are using gulp
+- you have a base class that you use on all your models and this base class has a generic type argument defined. Example:
+```
+/**
+ * Interface representing the data used on the model.
+ */
+export interface ViewJSONModelData {
+}
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+/**
+ * Base class to use as JSONModel.
+ *
+ * @name spinifex.webdemo.models.ViewJSONModel
+ */
+export default abstract class ViewJSONModel<T extends ViewJSONModelData> extends JSONModel {
+    constructor(oInitData: T ) {
+        super(oInitData);
+    }
 
-## Requirements
+    /**
+     * Returns the entire data.
+     */
+    public getData() : T {
+        // @ts-ignore
+        return <T>super.getData();
+    }
+}
+```
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
 This extension contributes the following settings:
 
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+* `ui5-ts-codegen.parentClassName`: array of class names that will be treated as a JSONModel parent class; defaults to "ViewJSONModel" (see sample code above)
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+This is still a WIP so please let me know if you encounter any issues.
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
------------------------------------------------------------------------------------------------------------
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (macOS) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+Initial release
 
 **Enjoy!**

@@ -1,7 +1,8 @@
 {
 	"name": "ui5-ts-codegen",
 	"displayName": "ui5-ts-codegen",
-	"description": "",
+	"description": "Visual Studio Code plugin that generates helper code for OpenUI5 / SAPUI5 classes",
+    "publisher": "LevyBajamundi",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.57.0"
