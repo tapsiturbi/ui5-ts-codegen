@@ -270,14 +270,8 @@ export default class UI5ModelGenerator {
                 iface.members.forEach(member => {
                     this.parseMember(member, null, typeChecker, arrTypes);
                 });
-    
-                fullContent += `//-----------------------------------------------------------------------------------\n`;
-                fullContent += `// Auto generated functions based from ${iface.name.text} for use in OpenUI5 \n`;
-                fullContent += `// views and controllers. \n`;
-                fullContent += `//\n`;
-                fullContent += `// Generated using {@link https://github.com/tapsiturbi/ui5-ts-codegen} \n`;
-                fullContent += `// on ${new Date().toString()} \n`;
-                fullContent += `//-----------------------------------------------------------------------------------\n\n`;
+   
+                fullContent += Util.getAutoGenMessage(iface.name.text);
     
                 // Getters and setters for each property
     
