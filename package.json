@@ -15,14 +15,19 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:ui5-ts-codegen.modelGenerator"
+		"onCommand:ui5-ts-codegen.modelGenerator",
+		"onCommand:ui5-ts-codegen.controlGenerator"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
 				"command": "ui5-ts-codegen.modelGenerator",
-				"title": "UI5-ts-codegen: Generate code for JSONModel"
+				"title": "UI5-ts-codegen: JSONModel code generator"
+			},
+			{
+				"command": "ui5-ts-codegen.controlGenerator",
+				"title": "UI5-ts-codegen: Control code generator"
 			}
 		],
 		"configuration": {
@@ -53,7 +58,8 @@
 		"test": "node ./out/test/runTest.js"
 	},
 	"dependencies": {
-		"typescript": "^4.3.5"
+		"typescript": "^4.3.5",
+		"ui5ts": "^0.3.2"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.3",

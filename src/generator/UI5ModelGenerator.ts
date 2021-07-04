@@ -4,43 +4,30 @@ import * as vscode from 'vscode';
 
 import * as ts from "typescript";
 import Util from '../util/Util';
+import CodeGenerator, { UI5MemberReturnType, UI5ProcessReturnType } from './CodeGenerator';
+import { Constants } from '../util/Constants';
 
 // const through = require("through2");
 // const ts = require("typescript");
 const path = require("path");
 
-const SPACER = "    ";
-const ANCHOR_START = "//-- AUTO GENERATED (DO NOT EDIT BELOW) ---------------";
-const ANCHOR_END = "//-- END AUTO GENERATED (DO NOT EDIT ABOVE) -----------";
-
 export interface UI5ModelGeneratorOptions {
     parentClassName : string[]
 }
 
-interface UI5MemberReturnType {
-    name: string,
-    parentPath: string,
-    kindName: string | undefined,
-    type: string,
-    comments: string,
-
-    contextMembers: UI5MemberReturnType[]
-}
-
-interface UI5ProcessReturnType {
-    content: string,
-    pos: number,
-    end: number,
-    className: string,
-    classGenerics: string[]
-}
+// interface UI5ProcessReturnType {
+//     content: string,
+//     pos: number,
+//     end: number,
+//     className: string,
+//     classGenerics: string[]
+// }
 
 /**
  * Class that generates getters/setters intended for JSONModel classes
  */
-export default class UI5ModelGenerator {
+export default class UI5ModelGenerator extends CodeGenerator {
 
-    private editor : vscode.TextEditor;
     private options : UI5ModelGeneratorOptions;
 
     /**
@@ -48,7 +35,7 @@ export default class UI5ModelGenerator {
      * @param options 
      */
     constructor(options?:UI5ModelGeneratorOptions) {
-        this.editor = <vscode.TextEditor>vscode.window.activeTextEditor;
+        super(options);
         
         const config = vscode.workspace.getConfiguration("ui5-ts-codegen");
         let defParentClassNames = config.get<string[]>("parentClassName");
@@ -93,104 +80,63 @@ export default class UI5ModelGenerator {
 
     }
 
-    /**
-     * Creates all the necessary Typescript AST objects that will be used to analyze the code snippet that
-     * is passed by VS Code
-     * @param tsCode 
-     */
-    private createASTObjects() {
-        const filename = "test.ts";
-        const currentCode = this.editor.document.getText();
-        const sourceFile = ts.createSourceFile(filename, currentCode, ts.ScriptTarget.Latest);
-        // let program = ts.createProgram(["temp.ts"], { allowJs: true });
+    // /**
+    //  * Adds or Replaces the generated code in the content.
+    //  *
+    //  * @param {*} origContent
+    //  * @param {*} pos
+    //  * @param {*} generatedCode
+    //  */
+    // private addOrReplaceGeneratedCode(sourceFile : ts.SourceFile, processResult:UI5ProcessReturnType) {
 
-        const defaultCompilerHost = ts.createCompilerHost({});
+    //     let doc = this.editor.document;
+    //     let wsEdit = new vscode.WorkspaceEdit();
+    //     let origContent = doc.getText();
 
-        const customCompilerHost: ts.CompilerHost = {
-            getSourceFile: (name, languageVersion) => {
-                console.log(`getSourceFile ${name}`);
+    //     const startIndex = origContent.indexOf(Constants.anchorStart);
+    //     const endIndex = origContent.indexOf(Constants.anchorEnd);
 
-                if (name === filename) {
-                    return sourceFile;
-                } else {
-                    return defaultCompilerHost.getSourceFile(
-                        name, languageVersion
-                    );
-                }
-            },
-            writeFile: (filename, data) => {},
-            getDefaultLibFileName: () => "lib.d.ts",
-            useCaseSensitiveFileNames: () => false,
-            getCanonicalFileName: filename => filename,
-            getCurrentDirectory: () => "",
-            getNewLine: () => "\n",
-            getDirectories: () => [],
-            fileExists: () => true,
-            readFile: () => ""
-        };
+    //     let generatedCode = processResult.content;
+    //     // add spacer at every newline
+    //     generatedCode = generatedCode.replace(/\n/g,`\n${Constants.spacer}`);
+    //     generatedCode = `\n\n${Constants.spacer}${Constants.anchorStart}\n${Constants.spacer}${generatedCode}\n\n${Constants.spacer}${Constants.anchorEnd}\n`;
 
-        const program = ts.createProgram([filename], {}, customCompilerHost);
+    //     let posDefine = null;
 
-        return {program, sourceFile};
-    }
+    //     // if the generated code exists, replace the existing region
+    //     if ( startIndex > -1 ) {
+    //         if ( endIndex === -1 ) {
+    //             throw new Error("Not able to find end anchor in file! Try deleting the entire AUTO GENERATED region and then re-run this action");
+    //         }
 
-    /**
-     * Adds or Replaces the generated code in the content.
-     *
-     * @param {*} origContent
-     * @param {*} pos
-     * @param {*} generatedCode
-     */
-    private addOrReplaceGeneratedCode(sourceFile : ts.SourceFile, processResult:UI5ProcessReturnType) {
+    //         if ( processResult.pos < startIndex ) {
+    //             throw new Error("Auto generated anchor start is after the closing of class! Try deleting the entire AUTO GENERATED region and then re-run this action");
+    //         }
 
-        let doc = this.editor.document;
-        let wsEdit = new vscode.WorkspaceEdit();
-        let origContent = doc.getText();
+    //         generatedCode = generatedCode.trimStart();
 
-        const startIndex = origContent.indexOf(ANCHOR_START);
-        const endIndex = origContent.indexOf(ANCHOR_END);
-
-        let generatedCode = processResult.content;
-        // add spacer at every newline
-        generatedCode = generatedCode.replace(/\n/g,`\n${SPACER}`);
-        generatedCode = `\n\n${SPACER}${ANCHOR_START}\n${SPACER}${generatedCode}\n\n${SPACER}${ANCHOR_END}\n`;
-
-        let posDefine = null;
-
-        // if the generated code exists, replace the existing region
-        if ( startIndex > -1 ) {
-            if ( endIndex === -1 ) {
-                throw new Error("Not able to find end anchor in file! Try deleting the entire AUTO GENERATED region and then re-run this action");
-            }
-
-            if ( processResult.pos < startIndex ) {
-                throw new Error("Auto generated anchor start is after the closing of class! Try deleting the entire AUTO GENERATED region and then re-run this action");
-            }
-
-            generatedCode = generatedCode.trimStart();
-
-            // let contentAfterGenCode = "";
-            const numNewLines = Util.countOccurrences(generatedCode, "\n");
+    //         // let contentAfterGenCode = "";
+    //         const numNewLines = Util.countOccurrences(generatedCode, "\n");
     
-            posDefine = doc.positionAt(startIndex);
-            wsEdit.replace(
-                doc.uri,
-                new vscode.Range(posDefine.line, posDefine.character, posDefine.line + numNewLines, 0),
-                generatedCode
-            );
+    //         posDefine = doc.positionAt(startIndex);
+    //         wsEdit.replace(
+    //             doc.uri,
+    //             new vscode.Range(posDefine.line, posDefine.character, posDefine.line + numNewLines, 0),
+    //             generatedCode
+    //         );
 
-        } else {
+    //     } else {
 
-            // otherwise, insert in the class
-            posDefine = doc.positionAt(processResult.pos+1);
+    //         // otherwise, insert in the class
+    //         posDefine = doc.positionAt(processResult.pos+1);
 
-            wsEdit.insert(doc.uri, posDefine, generatedCode);
-        }
+    //         wsEdit.insert(doc.uri, posDefine, generatedCode);
+    //     }
 
 
-        return vscode.workspace.applyEdit(wsEdit);
+    //     return vscode.workspace.applyEdit(wsEdit);
 
-    };
+    // };
 
     
     /**
@@ -295,19 +241,19 @@ export default class UI5ModelGenerator {
     }
     
     
-    /**
-     * Returns the pretty kind/type name based from the SyntaxKind enum from
-     * Typescript.
-     *
-     * @param {*} kind
-     */
-    private getSyntaxKind(kind:string) : string | undefined {
-        for(let p in ts.SyntaxKind) {
-            if ( kind === ts.SyntaxKind[p]) {
-                return p;
-            }
-        }
-    };
+    // /**
+    //  * Returns the pretty kind/type name based from the SyntaxKind enum from
+    //  * Typescript.
+    //  *
+    //  * @param {*} kind
+    //  */
+    // private getSyntaxKind(kind:string) : string | undefined {
+    //     for(let p in ts.SyntaxKind) {
+    //         if ( kind === ts.SyntaxKind[p]) {
+    //             return p;
+    //         }
+    //     }
+    // };
     
     /**
      * Returns the parent class name based on the given class node.
@@ -348,82 +294,82 @@ export default class UI5ModelGenerator {
         return null;
     }
     
-    /**
-     * Traverses the node hierarchy and builds the type information into the returned array
-     * @param {*} member
-     * @param {*} parents
-     * @param {*} returnArray
-     */
-    private parseMember(member:ts.TypeElement, parents : ts.TypeElement[] | null, typeChecker : ts.TypeChecker, returnArray : UI5MemberReturnType[]) {
-        // @ts-ignore
-        const prettyTypeName = typeChecker.typeToString(typeChecker.getTypeAtLocation(member.type));
-        const jsDocComments = this.getJSDocComments(member, typeChecker);
-        // @ts-ignore
-        const parentPath = parents ? "/" + parents.map(p => p.name?.text).join("/") : "";
+    // /**
+    //  * Traverses the node hierarchy and builds the type information into the returned array
+    //  * @param {*} member
+    //  * @param {*} parents
+    //  * @param {*} returnArray
+    //  */
+    // private parseMember(member:ts.TypeElement, parents : ts.TypeElement[] | null, typeChecker : ts.TypeChecker, returnArray : UI5MemberReturnType[]) {
+    //     // @ts-ignore
+    //     const prettyTypeName = typeChecker.typeToString(typeChecker.getTypeAtLocation(member.type));
+    //     const jsDocComments = this.getJSDocComments(member, typeChecker);
+    //     // @ts-ignore
+    //     const parentPath = parents ? "/" + parents.map(p => p.name?.text).join("/") : "";
 
-        if ( !parents ) {
-            parents = [];
-        }
+    //     if ( !parents ) {
+    //         parents = [];
+    //     }
     
-        if ( !returnArray ) {
-            returnArray = [];
-        }
+    //     if ( !returnArray ) {
+    //         returnArray = [];
+    //     }
     
-        let returnResult : UI5MemberReturnType = {
-            // @ts-ignore
-            name: member.name?.text,
-            parentPath: parentPath,
-            // @ts-ignore
-            kindName: this.getSyntaxKind(member.type.kind),
-            type: prettyTypeName,
-            comments: jsDocComments,
+    //     let returnResult : UI5MemberReturnType = {
+    //         // @ts-ignore
+    //         name: member.name?.text,
+    //         parentPath: parentPath,
+    //         // @ts-ignore
+    //         kindName: this.getSyntaxKind(member.type.kind),
+    //         type: prettyTypeName,
+    //         comments: jsDocComments,
     
-            contextMembers: [] // objects under array
-        };
-        returnArray.push(returnResult);
+    //         contextMembers: [] // objects under array
+    //     };
+    //     returnArray.push(returnResult);
 
-        // @ts-ignore
-        if ( member.type.members ) {
-            // @ts-ignore
-            member.type.members.forEach(submember => {
-                // @ts-ignore
-                this.parseMember(submember, parents.concat(member), typeChecker, returnArray);
-            });
+    //     // @ts-ignore
+    //     if ( member.type.members ) {
+    //         // @ts-ignore
+    //         member.type.members.forEach(submember => {
+    //             // @ts-ignore
+    //             this.parseMember(submember, parents.concat(member), typeChecker, returnArray);
+    //         });
     
-        // @ts-ignore
-        } else if ( member.type.kind == ts.SyntaxKind.ArrayType && member.type.elementType.members ) {
-            // if array of complex objects,
+    //     // @ts-ignore
+    //     } else if ( member.type.kind == ts.SyntaxKind.ArrayType && member.type.elementType.members ) {
+    //         // if array of complex objects,
     
-            // member.type.elementType.members
-            let subReturnArray = <UI5MemberReturnType[]> [];
-            // @ts-ignore
-            member.type.elementType.members.forEach(arrMember => {
-                this.parseMember(arrMember, null, typeChecker, subReturnArray);
-            });
+    //         // member.type.elementType.members
+    //         let subReturnArray = <UI5MemberReturnType[]> [];
+    //         // @ts-ignore
+    //         member.type.elementType.members.forEach(arrMember => {
+    //             this.parseMember(arrMember, null, typeChecker, subReturnArray);
+    //         });
     
-            returnResult.contextMembers = subReturnArray;
+    //         returnResult.contextMembers = subReturnArray;
     
-        }
-        return returnArray;
-    };
+    //     }
+    //     return returnArray;
+    // };
     
     /**
      * Returns the JSDoc comments (if any)
      * @param {*} node
      */
-    private getJSDocComments(node : ts.TypeElement, typeChecker : ts.TypeChecker) {
-        if ( node && node.name ) {
-            const symbol = typeChecker.getSymbolAtLocation(node.name);
-            if ( symbol ) {
-                let comments = symbol.getDocumentationComment(typeChecker);
-                if ( comments && comments.length ) {
-                    return comments.map(c => c.text).join("\n");
-                }
-            }
-        }
+    // private getJSDocComments(node : ts.TypeElement, typeChecker : ts.TypeChecker) {
+    //     if ( node && node.name ) {
+    //         const symbol = typeChecker.getSymbolAtLocation(node.name);
+    //         if ( symbol ) {
+    //             let comments = symbol.getDocumentationComment(typeChecker);
+    //             if ( comments && comments.length ) {
+    //                 return comments.map(c => c.text).join("\n");
+    //             }
+    //         }
+    //     }
     
-        return "";
-    }
+    //     return "";
+    // }
     
     /**
      * Returns the generated code for the path() and fullPath functions.
@@ -446,7 +392,7 @@ export default class UI5ModelGenerator {
                 fullName: fullName
             });
     
-            if ( parsedType.contextMembers.length ) {
+            if ( parsedType.contextMembers?.length ) {
                 // console.log(parsedType.contextMembers);
     
                 contextContent += this.generateContextPathFunctions(iface, parsedType, []);
@@ -459,14 +405,14 @@ export default class UI5ModelGenerator {
         fullContent += ` * Paths to each data entry to this model, each defined in ${iface.name.text} \n`;
         fullContent += ` */\n`;
         fullContent += `public static path() {\n`;
-        fullContent += `${SPACER}return {\n${SPACER+SPACER}${propList.map(p => `${p.jsdoc}\n${SPACER+SPACER}${p.prop}: "${p.fullName}"` ).join(",\n"+SPACER+SPACER)} \n${SPACER}};`;
+        fullContent += `${Constants.spacer}return {\n${Constants.spacer+Constants.spacer}${propList.map(p => `${p.jsdoc}\n${Constants.spacer+Constants.spacer}${p.prop}: "${p.fullName}"` ).join(",\n"+Constants.spacer+Constants.spacer)} \n${Constants.spacer}};`;
         fullContent += `\n}\n`; // closing of get path()
     
         fullContent += `/**\n`;
         fullContent += ` * Full paths to each data entry to this model, each defined in ${iface.name.text} \n`;
         fullContent += ` */\n`;
         fullContent += `public static fullpath() {\n`;
-        fullContent += `${SPACER}return {\n${SPACER+SPACER}${propList.map(p => `${p.jsdoc}\n${SPACER+SPACER}${p.prop}: "{${p.fullName}}"` ).join(",\n"+SPACER+SPACER)} \n${SPACER}};`;
+        fullContent += `${Constants.spacer}return {\n${Constants.spacer+Constants.spacer}${propList.map(p => `${p.jsdoc}\n${Constants.spacer+Constants.spacer}${p.prop}: "{${p.fullName}}"` ).join(",\n"+Constants.spacer+Constants.spacer)} \n${Constants.spacer}};`;
         fullContent += `\n}\n`; // closing of get fullpath()
     
         fullContent += contextContent;
@@ -505,7 +451,7 @@ export default class UI5ModelGenerator {
         fullContent += ` * Paths to each data entry to this model (${iface.name.text}) under the context of ${fullPath.replace(/\/([^\/]+)/g, "/$1[]")} \n`;
         fullContent += ` */\n`;
         fullContent += `public static contextPath${functionName}() {\n`;
-        fullContent += `${SPACER}return {\n${SPACER}${propList.map(p => `${SPACER}${p}: "${p}"` ).join(",\n"+SPACER)} \n${SPACER}};`;
+        fullContent += `${Constants.spacer}return {\n${Constants.spacer}${propList.map(p => `${Constants.spacer}${p}: "${p}"` ).join(",\n"+Constants.spacer)} \n${Constants.spacer}};`;
         fullContent += `\n}\n`;
     
         // contextFullPath()
@@ -513,7 +459,7 @@ export default class UI5ModelGenerator {
         fullContent += ` * Paths to each data entry to this model (${iface.name.text}) under the context of ${fullPath.replace(/\/([^\/]+)/g, "/$1[]")} \n`;
         fullContent += ` */\n`;
         fullContent += `public static fullContextPath${functionName}() {\n`;
-        fullContent += `${SPACER}return {\n${SPACER}${propList.map(p => `${SPACER}${p}: "{${p}}"` ).join(",\n"+SPACER)} \n${SPACER}};`;
+        fullContent += `${Constants.spacer}return {\n${Constants.spacer}${propList.map(p => `${Constants.spacer}${p}: "{${p}}"` ).join(",\n"+Constants.spacer)} \n${Constants.spacer}};`;
         fullContent += `\n}\n`;
     
         fullContent += subContextContent;
@@ -543,7 +489,7 @@ export default class UI5ModelGenerator {
             fullContent += ` * @see ${iface.name.text} \n`;
             fullContent += ` */\n`;
             fullContent += `public getData${fullName}() : ${parsedType.type} {\n`;
-            fullContent += `${SPACER}return this.getProperty("${fullPath}"); \n`
+            fullContent += `${Constants.spacer}return this.getProperty("${fullPath}"); \n`
             fullContent += `}\n\n`
     
             fullContent += `/**\n`;
@@ -552,7 +498,7 @@ export default class UI5ModelGenerator {
             fullContent += ` * @see ${iface.name.text} \n`;
             fullContent += ` */\n`;
             fullContent += `public setData${fullName}(vValue:${parsedType.type}) {\n`;
-            fullContent += `${SPACER}this.setProperty("${fullPath}", vValue); \n`
+            fullContent += `${Constants.spacer}this.setProperty("${fullPath}", vValue); \n`
             fullContent += `}\n\n`
     
         });
